@@ -11,6 +11,12 @@ var Find = function (model) {
 	return this;
 };
 
+Find.prototype.copyState = function (find) {
+	this.query = JSON.parse(JSON.stringify(find.query));
+	this.params = JSON.parse(JSON.stringify(find.params));
+	this._prefetch = find._prefetch;
+};
+
 Find.prototype.where = function () {
 	var self = this
 	  , args = Array.prototype.slice.call(arguments)
@@ -166,7 +172,13 @@ Find.prototype.fetchAssociation = function (rows, table, _cb) {
 	
 	assoc = this.model.determineAssociation(relatedModel.tableName);
 	
-	if (!assoc) return _cb("Association not found...");
+	if (!assoc) {
+		console.log(
+			"Warning: Association not found between " +
+			this.model.tableName + " and " + relatedModel.tableName + "..."
+		);
+		return _cb();
+	}
 	
 	assoc.relatedModel = relatedModel;
 	assoc.find = find;
@@ -285,21 +297,76 @@ Find.prototype._getPaired = function (rows, assoc, _cb) {
 
 	if (!find) find = relatedModel;
 
-	find
-		.where("`" + relPrimaryKey + "` IN (" + rowIds.join(", ") + ")")
-		.getAll(function (err, rels) {
-			if (err) return _cb(err);
-			if (!rels) return _cb(null, rows);
-			
-			rows.forEach(function addToRow(row) {
-				var filteredRels = rels.filter(function (rel) {
-					return row[primaryKey] === rel[relPrimaryKey];
-				});
-				if (filteredRels.length) row[lingo.en.singularize(relatedModel.tableName)] = filteredRels[0];
-			});	
-			
-			_cb(null, rows);
-		});
+	find.find(rowIds, function (err, rels) {
+		if (err) return _cb(err);
+		if (!rels) return _cb(null, rows);
+		
+		rows.forEach(function addToRow(row) {
+			var filteredRels = rels.filter(function (rel) {
+				return row[primaryKey] === rel[relPrimaryKey];
+			});
+			if (filteredRels.length) row[lingo.en.singularize(relatedModel.tableName)] = filteredRels[0];
+		});	
+		
+		_cb(null, rows);
+	});
+};
+
+Find.prototype._getPolymorphic = function (rows, assoc, _cb) {
+	var self = this
+	  , relatedModel = assoc.relatedModel
+	  , find = assoc.find
+	  , obj = {}
+	  , info = self.db.settings.polymorphic(relatedModel.tableName)
+	  , counter = 0
+	  , errCount = 0;
+
+	rows.forEach(function (row) {
+		var table = row[info.tableField]
+		  , relId = row[info.foreignKey];
+		
+		if (!obj[table]) obj[table] = [];
+		
+		obj[table].push(relId);
+	});
+
+	for (var table in obj) {
+		if (!obj.hasOwnProperty(table)) continue;
+		
+		(function (table) {
+			var newRelModel = self.db[self.db.settings.polymorphic().table(table)]
+			  , newFind = newRelModel.Query()
+			  , relPrimaryKey = newRelModel.getPrimaryKey();
+
+			if (find) newFind.copyState(find);
+
+			counter++;
+
+			newFind.find(obj[table], function (err, rels) {
+				if (errCount) return;
+				if (err) {
+					errCount++;
+					return _cb(err);
+				}
+
+				if (rels) {
+					rows.forEach(function (row) {
+						var filteredRels = rels.filter(function (rel) {
+							return row[info.foreignKey] === rel[relPrimaryKey] && row[info.tableField] === table;
+						});
+						if (filteredRels.length) row[lingo.en.singularize(relatedModel.tableName)] = filteredRels[0];
+
+						row["_" + lingo.en.singularize(relatedModel.tableName)] = table;
+					});
+				}
+
+				if (--counter) return;
+
+				_cb(null, rows);
+			});
+
+		})(table);
+	}
 };
 
 Find.prototype._joinThrough = function (rows, find, connectorModel, relatedModel, _cb) {

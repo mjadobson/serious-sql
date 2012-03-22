@@ -45,6 +45,7 @@ Model.prototype.determineAssociation = function (str) {
 	case "belongsTo":
 	case "hasMany":
 	case "paired":
+	case "polymorphic":
 		return { type: assoc };
 	}
 	if (assoc && assoc.type) {
@@ -54,6 +55,7 @@ Model.prototype.determineAssociation = function (str) {
 		case "belongsTo":
 		case "hasMany":
 		case "paired":
+		case "polymorphic":
 			// Kill object references.
 			return JSON.parse(JSON.stringify(assoc));
 		}
@@ -73,7 +75,7 @@ Model.prototype.determineAssociation = function (str) {
 		}
 		
 	}
-	
+
 	// Check for hABTM table
 	var connectorModels = this.db.settings.connectorModel(str, this.tableName);
 	if (!Array.isArray(connectorModels)) connectorModels = [connectorModels];
@@ -124,7 +126,7 @@ Model.prototype.instanceMethods = {
 				if (err) return _cb(err);
 				if (!--counter) _cb(null, self);
 			});
-		})
+		});
 		return this;
 	},
 	set: function (table, _cb) {
@@ -337,7 +339,7 @@ Model.prototype.paired = function () {
 
 	tables.forEach(function (table) {
 		if (table.isModel) table = table.tableName;
-	
+		
 		self.associations[table] = "paired";
 	});
 };
@@ -349,6 +351,19 @@ Model.prototype.Query = function () {
 Model.prototype.save = function (obj, _cb) {
 	// timestamps?
 	this.client.save(this.tableName, this.getFields(), obj, _cb);
+};
+
+Model.prototype.setPolymorphic = function () {
+	var self = this
+	  , aliases = Array.prototype.slice.call(arguments);
+
+	aliases.forEach(function (alias) {
+		self.db[alias] = new Model(alias, self.db);
+		self.db[alias].isPolymorph = true;
+		self.associations[alias] = "polymorphic";
+	});
+	
+	return this;
 };
 
 (function () {
