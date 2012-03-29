@@ -56,6 +56,7 @@ Model.prototype.determineAssociation = function (str) {
 		case "hasMany":
 		case "paired":
 		case "polymorphic":
+		case "contraPolymorphic":
 			// Kill object references.
 			return JSON.parse(JSON.stringify(assoc));
 		}
@@ -355,15 +356,28 @@ Model.prototype.save = function (obj, _cb) {
 
 Model.prototype.setPolymorphic = function () {
 	var self = this
+	  , db = self.db
 	  , aliases = Array.prototype.slice.call(arguments);
 
 	aliases.forEach(function (alias) {
-		self.db[alias] = new Model(alias, self.db);
-		self.db[alias].isPolymorph = true;
+		db[alias] = new Model(alias, db);
+		db[alias].isPolymorph = true;
 		self.associations[alias] = "polymorphic";
+
+		for (var prop in db) {
+			if (!db[prop].isModel) continue;
+			if (db[prop].associations[self.tableName]) continue;
+
+			db[prop].contraPolymorphic(self, alias);
+		}
 	});
 	
 	return this;
+};
+
+Model.prototype.contraPolymorphic = function (table, polymorph) {
+	var name = table.isModel ? table.tableName : table;
+	this.associations[name] = { type: "contraPolymorphic", through: polymorph };
 };
 
 (function () {

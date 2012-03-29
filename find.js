@@ -11,7 +11,7 @@ var Find = function (model) {
 	return this;
 };
 
-Find.prototype.copyState = function (find) {
+Find.prototype._copyState = function (find) {
 	this.query = JSON.parse(JSON.stringify(find.query));
 	this.params = JSON.parse(JSON.stringify(find.params));
 	this._prefetch = find._prefetch;
@@ -338,7 +338,7 @@ Find.prototype._getPolymorphic = function (rows, assoc, _cb) {
 			  , newFind = newRelModel.Query()
 			  , relPrimaryKey = newRelModel.getPrimaryKey();
 
-			if (find) newFind.copyState(find);
+			if (find) newFind._copyState(find);
 
 			counter++;
 
@@ -367,6 +367,45 @@ Find.prototype._getPolymorphic = function (rows, assoc, _cb) {
 
 		})(table);
 	}
+};
+
+Find.prototype._getContraPolymorphic = function (rows, assoc, _cb) {
+	var self = this
+	  , relatedModel = assoc.relatedModel
+	  , find = assoc.find
+	  , primaryKey = this.model.getPrimaryKey()
+	  , relPrimaryKey = relatedModel.getPrimaryKey()
+	  , poly = self.db.settings.polymorphic(assoc.through)
+	  , conditions = {};
+	
+	var rowIds = rows.map(function (row) {
+		return row[primaryKey];
+	});
+	
+	conditions[poly.foreignKey] = rowIds;
+	conditions[poly.tableField] = poly.contraTable(self.model.tableName);
+	
+	if (!find) find = relatedModel.Query();
+	
+	find
+		.where(conditions)
+		.getAll(function (err, rels) {
+			if (err) return _cb(err);
+			if (!rels) return _cb(null, rows);
+			
+			rows.forEach(function addToRow(row) {
+				var filteredRels = rels.filter(function (rel) {
+					return row[primaryKey] === rel[poly.foreignKey];
+				});
+				
+				// Filter resets instance method on array.
+				relatedModel._addInstanceMethods(filteredRels);
+				
+				if (filteredRels.length) row[relatedModel.tableName] = filteredRels;
+			});
+			
+			_cb(null, rows);
+		});
 };
 
 Find.prototype._joinThrough = function (rows, find, connectorModel, relatedModel, _cb) {
