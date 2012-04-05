@@ -400,7 +400,8 @@ Find.prototype._getContraPolymorphic = function (rows, assoc, _cb) {
 				
 				// Filter resets instance method on array.
 				relatedModel._addInstanceMethods(filteredRels);
-				
+
+				if (filteredRels.length === 1) row[lingo.en.singularize(relatedModel.tableName)] = filteredRels[0];
 				if (filteredRels.length) row[relatedModel.tableName] = filteredRels;
 			});
 			
