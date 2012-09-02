@@ -12,16 +12,6 @@ var Serious = function () {
 	return this;
 };
 
-Serious.prototype.configure = function () {
-	var args = Array.prototype.slice.call(arguments)
-	  , fn = args.pop();
-	
-	// Insert environ. stuff here.
-	
-	fn();
-	return this;
-};
-
 Serious.prototype.set = function (setting, val) {
 	this.settings[setting] = val;
 	return this;

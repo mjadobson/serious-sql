@@ -27,10 +27,7 @@ db.prototype.build = function (tableName, options, params) {
 	if (options.select) {
 		sql += "SELECT ";
 		if (options.fields) {
-			sql += options.fields.map(function (field) {
-				if (field === "*" || field === "COUNT(*)") return field;
-				return self.addTicks(field);
-			}).join(", ");
+			sql += options.fields.join(", ");
 		} else {
 			sql += "*";
 		}
