@@ -6,7 +6,7 @@ var Find = function (model) {
 	this.model = model;
 	this.client = model.client;
 	this.db = model.db;
-	this.query = { where: [], set: [] };
+	this.query = { where: [], set: [], joins: [] };
 	this.params = { where: [], set: [] };
 	return this;
 };
@@ -92,14 +92,22 @@ Find.prototype.fields = function () {
 	return this;
 };
 
-Find.prototype.join = function (tableName, conditions) {
-	this.query.join = tableName;
-	if (conditions) this.on(conditions);
+Find.prototype.join = function (tableName, conditions, type) {
+	if (!type) type = "JOIN";
+	this.query.joins.push(type + " `" + tableName + "` ON " + conditions);
 	return this;
 };
 
-Find.prototype.on = function (conditions) {
-	this.query.on = conditions;
+Find.prototype.leftJoin = function (tableName, conditions) {
+	return this.join(tableName, conditions, "LEFT JOIN");
+};
+
+Find.prototype.outerJoin = function (tableName, conditions) {
+	return this.join(tableName, conditions, "OUTER JOIN");
+};
+
+Find.prototype.groupBy = function (field) {
+	this.query.groupBy = field;
 	return this;
 };
 

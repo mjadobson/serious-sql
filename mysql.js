@@ -37,8 +37,9 @@ db.prototype.build = function (tableName, options, params) {
 	} else if (options.delete) {
 		sql += "DELETE FROM " + this.addTicks(tableName);
 	}
-	if (options.join) sql += " JOIN " + this.addTicks(options.join);
-	if (options.on) sql += " ON " + options.on;
+	if (options.joins && options.joins.length) {
+		sql += " " + options.joins.join(" ");
+	}
 	if (options.set && options.set.length) {
 		sql += " SET " + options.set.join(", ");
 		sqlParams = sqlParams.concat(params.set);
@@ -47,6 +48,7 @@ db.prototype.build = function (tableName, options, params) {
 		sql += " WHERE " + options.where.join(" AND ");
 		sqlParams = sqlParams.concat(params.where);
 	}
+	if (options.groupBy) sql += " GROUP BY " + options.groupBy;
 	if (options.order) sql += " ORDER BY " + this.addTicks(options.order.field) + " " + options.order.dir;
 	if (options.limit) sql += " LIMIT " + options.limit;
 	if (options.offset) sql += " OFFSET " + options.offset;
