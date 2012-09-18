@@ -50,7 +50,7 @@ Find.prototype.where = function () {
 	}
 	if (bits.length) condition = bits.join(" AND ");
 	
-	this.query.where.push(condition);
+	this.query.where.push("(" + condition + ")");
 	return this;
 };
 

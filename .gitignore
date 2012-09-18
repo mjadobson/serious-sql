@@ -4,3 +4,5 @@ node_modules/
 serious.sublime-project
 
 serious.sublime-workspace
+
+npm-debug.log
