@@ -49,6 +49,7 @@ db.prototype.build = function (tableName, options, params) {
 		sqlParams = sqlParams.concat(params.where);
 	}
 	if (options.groupBy) sql += " GROUP BY " + options.groupBy;
+	if (options.having) sql += " HAVING " + options.having;
 	if (options.order) sql += " ORDER BY " + this.addTicks(options.order.field) + " " + options.order.dir;
 	if (options.limit) sql += " LIMIT " + options.limit;
 	if (options.offset) sql += " OFFSET " + options.offset;

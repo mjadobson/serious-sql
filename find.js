@@ -111,6 +111,11 @@ Find.prototype.groupBy = function (field) {
 	return this;
 };
 
+Find.prototype.having = function (str) {
+	this.query.having = str;
+	return this;
+};
+
 Find.prototype.prefetch = function () {
 	this._prefetch = Array.prototype.slice.call(arguments);
 	return this;
