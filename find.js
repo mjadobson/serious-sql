@@ -337,6 +337,8 @@ Find.prototype._getPolymorphic = function (rows, assoc, _cb) {
 	rows.forEach(function (row) {
 		var table = row[info.tableField]
 		  , relId = row[info.foreignKey];
+
+		row["_" + lingo.en.singularize(relatedModel.tableName)] = table;
 		
 		if (!obj[table]) obj[table] = [];
 		
@@ -368,8 +370,6 @@ Find.prototype._getPolymorphic = function (rows, assoc, _cb) {
 							return row[info.foreignKey] === rel[relPrimaryKey] && row[info.tableField] === table;
 						});
 						if (filteredRels.length) row[lingo.en.singularize(relatedModel.tableName)] = filteredRels[0];
-
-						row["_" + lingo.en.singularize(relatedModel.tableName)] = table;
 					});
 				}
 
