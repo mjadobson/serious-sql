@@ -69,9 +69,14 @@ Serious.prototype.query = function () {
 		_cb = args.pop();
 	}
 	
-	args.forEach(function (arg) {
-		params = params.concat(arg);
-	});
+	if (args.length = 1) {
+		params = args[0]
+	} else {
+		args.forEach(function (arg) {
+			params = params.push(arg);
+		});
+	}
+	
 	this.client.run(this.client.format(sql, params), _cb);
 	return this;
 };
