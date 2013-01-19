@@ -349,9 +349,9 @@ Model.prototype.Query = function () {
 	return new Find(this);
 };
 
-Model.prototype.save = function (obj, _cb) {
+Model.prototype.save = function (obj, _cb, onDupeKey) {
 	// timestamps?
-	this.client.save(this.tableName, this.getFields(), obj, _cb);
+	this.client.save(this.tableName, this.getFields(), obj, onDupeKey, _cb);
 };
 
 Model.prototype.setPolymorphic = function () {

@@ -103,7 +103,7 @@ db.prototype.update = function (tableName, options, params, _cb) {
 	return this.run(sql, _cb);
 };
 
-db.prototype.save = function (tableName, fields, obj, _cb) {
+db.prototype.save = function (tableName, fields, obj, onDupeKey, _cb) {
 	var sql = "INSERT INTO `" + tableName + "`";
 	sql += " (" + fields.map(this.addTicks).join(", ") + ")";
 	sql += " VALUES "
@@ -122,7 +122,8 @@ db.prototype.save = function (tableName, fields, obj, _cb) {
 	});
 	sql += foo.join(", ");
 	sql += " ON DUPLICATE KEY UPDATE"
-	sql += fields.map(function (field) { return " `" + field + "` = VALUES(`" + field + "`)"; }).join(", ");
+	if (onDupeKey) sql += " " + onDupeKey;
+	else sql += fields.map(function (field) { return " `" + field + "` = VALUES(`" + field + "`)"; }).join(", ");
 	sql += ";";
 	var sqlReady = this.format(sql, params);
 	this.run(sqlReady, _cb);
