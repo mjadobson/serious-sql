@@ -70,11 +70,9 @@ Serious.prototype.query = function () {
 	}
 	
 	if (args.length == 1) {
-		params = args[0]
+		params = args[0];
 	} else {
-		args.forEach(function (arg) {
-			params = params.push(arg);
-		});
+		params = args;
 	}
 	
 	this.client.run(this.client.format(sql, params), _cb);
