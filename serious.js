@@ -69,7 +69,7 @@ Serious.prototype.query = function () {
 		_cb = args.pop();
 	}
 	
-	if (args.length = 1) {
+	if (args.length == 1) {
 		params = args[0]
 	} else {
 		args.forEach(function (arg) {
