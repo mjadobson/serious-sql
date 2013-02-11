@@ -5,6 +5,26 @@ var db = function (settings, logging) {
 	this.settings = settings;
 	this.logging = logging;
 
+	function handleDisconnect(connection) {
+		connection.on('error', function (err) {
+			if (!err.fatal) {
+				return;
+			}
+
+			if (err.code !== 'PROTOCOL_CONNECTION_LOST') {
+				throw err;
+			}
+
+			console.log('Re-connecting lost connection: ' + err.stack);
+
+			connection = mysql.createConnection(connection.config);
+			handleDisconnect(connection);
+			connection.connect();
+		});
+	}
+
+	handleDisconnect(this.client);
+
 	return this;
 };
 
@@ -26,8 +46,8 @@ db.prototype.riddlify = function () {
 
 db.prototype.build = function (tableName, options, params) {
 	var self = this
-	  , sql = ""
-	  , sqlParams = [];
+		, sql = ""
+		, sqlParams = [];
 	
 	if (options.select) {
 		sql += "SELECT ";
@@ -114,7 +134,7 @@ db.prototype.save = function (tableName, fields, obj, onDupeKey, _cb) {
 	sql += " VALUES "
 	if (!Array.isArray(obj)) obj = [obj];
 	var foo = []
-	  , params = [];
+		, params = [];
 	obj.forEach(function (o) {
 		var bar = [];
 		fields.forEach(function (field) {
