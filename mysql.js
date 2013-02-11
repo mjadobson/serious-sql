@@ -1,6 +1,8 @@
 var mysql = require("mysql");
 
 var db = function (settings, logging) {
+	var self = this;
+
 	this.client = mysql.createConnection(settings);
 	this.settings = settings;
 	this.logging = logging;
@@ -17,9 +19,9 @@ var db = function (settings, logging) {
 
 			console.log('Re-connecting lost connection: ' + err.stack);
 
-			this.client = mysql.createConnection(settings);
-			handleDisconnect(this.client);
-			this.client.connect();
+			self.client = mysql.createConnection(settings);
+			handleDisconnect(self.client);
+			self.client.connect();
 		});
 	}
 
