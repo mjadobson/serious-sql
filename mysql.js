@@ -17,7 +17,7 @@ var db = function (settings, logging) {
 
 			console.log('Re-connecting lost connection: ' + err.stack);
 
-			connection = mysql.createConnection(connection.config);
+			connection = mysql.createConnection(settings);
 			handleDisconnect(connection);
 			connection.connect();
 		});
