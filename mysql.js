@@ -8,6 +8,10 @@ var db = function (settings, logging) {
 	return this;
 };
 
+db.prototype.connect = function () {
+	return this.client.connect();
+};
+
 db.prototype.addTicks = function (string) {
 	return "`" + string + "`";
 };
