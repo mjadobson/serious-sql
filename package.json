@@ -1,11 +1,11 @@
 {
   "name": "serious-sql",
   "description": "Library that provides a cool way of interacting with existing MySQL databases. Use your own conventions, and it will automagically figure out associations. It has efficient recursive prefetching, as well as table aliases, chainable interfaces and other features.",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "author": "Matt Dobson <mjadobson@gmail.com>",
   "dependencies": {
     "lingo": ">= 0.0.4",
-    "mysql": "0.9.6"
+    "mysql": "2.0.0-alpha7"
   },
   "keywords": ["mysql"],
   "repository": "git://github.com/sugarstack/serious-sql",

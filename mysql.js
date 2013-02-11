@@ -1,9 +1,10 @@
 var mysql = require("mysql");
 
 var db = function (settings, logging) {
-	this.client = mysql.createClient(settings);
+	this.client = mysql.createConnection(settings);
 	this.settings = settings;
 	this.logging = logging;
+
 	return this;
 };
 
@@ -12,7 +13,7 @@ db.prototype.addTicks = function (string) {
 };
 
 db.prototype.format = function (sql, params) {
-	return mysql.Client.prototype.format(sql, params);
+	return this.client.format(sql, params);
 };
 
 db.prototype.riddlify = function () {

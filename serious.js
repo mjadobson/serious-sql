@@ -23,8 +23,6 @@ Serious.prototype.start = function (_cb) {
 	
 	this.client = new this.settings.client(this.settings.connection, this.settings.logging);
 	
-	this.client.useDatabase(this.settings.connection.database);
-	
 	this.client.listTables(function (err, tableNames) {
 		tableNames.forEach(function (tableName) {
 			counter++;
