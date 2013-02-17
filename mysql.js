@@ -8,17 +8,15 @@ var db = function (settings, logging) {
 	this.logging = logging;
 
 	function handleDisconnect(connection) {
-		connection.on('error', function (err) {
+		connection.on("error", function (err) {
 			if (!err.fatal) {
 				return;
 			}
 
-			if (err.code !== 'PROTOCOL_CONNECTION_LOST') {
+			if (err.code !== "PROTOCOL_CONNECTION_LOST") {
 				throw err;
 			}
-
-			console.log('Re-connecting lost connection: ' + err.stack);
-
+			
 			self.client = mysql.createConnection(settings);
 			handleDisconnect(self.client);
 			self.client.connect();
