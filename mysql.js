@@ -3,33 +3,49 @@ var mysql = require("mysql");
 var db = function (settings, logging) {
 	var self = this;
 
-	this.client = mysql.createConnection(settings);
 	this.settings = settings;
 	this.logging = logging;
-
-	function handleDisconnect(connection) {
-		connection.on("error", function (err) {
-			if (!err.fatal) {
-				return;
-			}
-
-			if (err.code !== "PROTOCOL_CONNECTION_LOST") {
-				throw err;
-			}
-			
-			self.client = mysql.createConnection(settings);
-			handleDisconnect(self.client);
-			self.client.connect();
-		});
-	}
-
-	handleDisconnect(this.client);
 
 	return this;
 };
 
-db.prototype.connect = function () {
-	return this.client.connect();
+db.prototype.getConnection = function () {
+	// Test connection health before returning it to caller.
+	if (
+		this.connection && this.connection._socket
+		&& this.connection._socket.readable
+		&& this.connection._socket.writable
+	) {
+		return this.connection;
+	}
+
+	if (this.connection) {
+		console.log("UNHEALTHY SQL CONNECTION; RECONNECTING TO SQL.");
+	} else {
+		console.log("CONNECTING TO SQL.");
+	}
+
+	var connection = mysql.createConnection(this.settings);
+
+	connection.connect(function(err) {
+		if (err) {
+			console.log("SQL CONNECT ERROR: " + err);
+		} else {
+			console.log("SQL CONNECT SUCCESSFUL.");
+		}
+	});
+
+	connection.on("close", function (err) {
+		console.log("SQL CONNECTION CLOSED.");
+	});
+
+	connection.on("error", function (err) {
+		console.log("SQL CONNECTION ERROR: " + err);
+	});
+
+	this.connection = connection;
+
+	return this.connection;
 };
 
 db.prototype.addTicks = function (string) {
@@ -37,7 +53,9 @@ db.prototype.addTicks = function (string) {
 };
 
 db.prototype.format = function (sql, params) {
-	return this.client.format(sql, params);
+	var connection = this.getConnection();
+
+	return connection.format(sql, params);
 };
 
 db.prototype.riddlify = function () {
@@ -87,12 +105,17 @@ db.prototype.build = function (tableName, options, params) {
 
 db.prototype.run = function (sql, _cb) {
 	if (this.logging) console.log(sql);
-	this.client.query(sql, _cb);
+
+	var connection = this.getConnection();
+
+	connection.query(sql, _cb);
 	return this;
 };
 
 db.prototype.useDatabase = function (dbName) {
-	this.client.useDatabase(dbName);
+	var connection = this.getConnection();
+
+	connection.useDatabase(dbName);
 	return this;
 };
 
