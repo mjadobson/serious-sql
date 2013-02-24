@@ -386,6 +386,7 @@ Find.prototype._getContraPolymorphic = function (rows, assoc, _cb) {
 	var self = this
 	  , relatedModel = assoc.relatedModel
 	  , find = assoc.find
+	  , newFind = relatedModel.Query()
 	  , primaryKey = this.model.getPrimaryKey()
 	  , relPrimaryKey = relatedModel.getPrimaryKey()
 	  , poly = self.db.settings.polymorphic(assoc.through)
@@ -398,9 +399,9 @@ Find.prototype._getContraPolymorphic = function (rows, assoc, _cb) {
 	conditions[poly.foreignKey] = rowIds;
 	conditions[poly.tableField] = poly.contraTable(self.model.tableName);
 	
-	if (!find) find = relatedModel.Query();
+	if (find) newFind._copyState(find);
 	
-	find
+	newFind
 		.where(conditions)
 		.getAll(function (err, rels) {
 			if (err) return _cb(err);
