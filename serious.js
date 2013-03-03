@@ -24,6 +24,8 @@ Serious.prototype.start = function (_cb) {
 	this.client = new this.settings.client(this.settings.connection, this.settings.logging);
 
 	this.client.listTables(function (err, tableNames) {
+		if (err) return _cb(err);
+		
 		tableNames.forEach(function (tableName) {
 			counter++;
 			
