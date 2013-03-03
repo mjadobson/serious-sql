@@ -122,6 +122,8 @@ db.prototype.useDatabase = function (dbName) {
 db.prototype.listTables = function (_cb) {
 	var self = this;
 	return this.run("SHOW TABLES", function (err, rows) {
+		if (err) return _cb(err);
+
 		rows = rows.map(function (row) {
 			return row["Tables_in_" + self.settings.database];
 		});
@@ -131,6 +133,8 @@ db.prototype.listTables = function (_cb) {
 
 db.prototype.listFields = function (tableName, _cb) {
 	return this.run("SHOW FULL COLUMNS FROM " + this.addTicks(tableName), function (err, rows) {
+		if (err) return _cb(err);
+		
 		var o = {};
 		rows.forEach(function (row) {
 			o[row.Field] = row;
