@@ -20,8 +20,10 @@ Serious.prototype.set = function (setting, val) {
 Serious.prototype.start = function (_cb) {
 	var self = this
 	  , counter = 0;
-	
+
 	this.client = new this.settings.client(this.settings.connection, this.settings.logging);
+	
+	this.client.createPool();
 
 	this.client.listTables(function (err, tableNames) {
 		if (err) return _cb(err);
@@ -75,7 +77,7 @@ Serious.prototype.query = function () {
 		params = args;
 	}
 	
-	this.client.run(this.client.format(sql, params), _cb);
+	this.client.run(sql, params, _cb);
 	return this;
 };
 

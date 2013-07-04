@@ -9,53 +9,12 @@ var db = function (settings, logging) {
 	return this;
 };
 
-db.prototype.getConnection = function () {
-	// Test connection health before returning it to caller.
-	if (
-		this.connection && this.connection._socket
-		&& this.connection._socket.readable
-		&& this.connection._socket.writable
-	) {
-		return this.connection;
-	}
-
-	if (this.connection) {
-		console.log("UNHEALTHY SQL CONNECTION; RECONNECTING TO SQL.");
-	} else {
-		console.log("CONNECTING TO SQL.");
-	}
-
-	var connection = mysql.createConnection(this.settings);
-
-	connection.connect(function(err) {
-		if (err) {
-			console.log("SQL CONNECT ERROR: " + err);
-		} else {
-			console.log("SQL CONNECT SUCCESSFUL.");
-		}
-	});
-
-	connection.on("close", function (err) {
-		console.log("SQL CONNECTION CLOSED.");
-	});
-
-	connection.on("error", function (err) {
-		console.log("SQL CONNECTION ERROR: " + err);
-	});
-
-	this.connection = connection;
-
-	return this.connection;
+db.prototype.createPool = function () {
+	this.pool = mysql.createPool(this.settings);
 };
 
 db.prototype.addTicks = function (string) {
 	return "`" + string + "`";
-};
-
-db.prototype.format = function (sql, params) {
-	var connection = this.getConnection();
-
-	return connection.format(sql, params);
 };
 
 db.prototype.riddlify = function () {
@@ -98,30 +57,29 @@ db.prototype.build = function (tableName, options, params) {
 	if (options.offset) sql += " OFFSET " + options.offset;
 	sql += ";";
 	
-	if (sqlParams && sqlParams.length) sql = this.format(sql, sqlParams);
-	
-	return sql;
+	return { sql: sql, params: sqlParams };
 };
 
-db.prototype.run = function (sql, _cb) {
-	if (this.logging) console.log(sql);
+db.prototype.run = function (sql, params, _cb) {
+	var self = this;
 
-	var connection = this.getConnection();
+	this.pool.getConnection(function (err, connection) {
+		if (err) return _cb(err);
 
-	connection.query(sql, _cb);
-	return this;
-};
+		if (self.logging) console.log(connection.format(sql, params));
+		
+		connection.query(sql, params, function () {
+			connection.end();
+			if (_cb) _cb.apply(null, arguments);
+		});
+	});
 
-db.prototype.useDatabase = function (dbName) {
-	var connection = this.getConnection();
-
-	connection.useDatabase(dbName);
 	return this;
 };
 
 db.prototype.listTables = function (_cb) {
 	var self = this;
-	return this.run("SHOW TABLES", function (err, rows) {
+	return this.run("SHOW TABLES", null, function (err, rows) {
 		if (err) return _cb(err);
 
 		rows = rows.map(function (row) {
@@ -132,7 +90,9 @@ db.prototype.listTables = function (_cb) {
 };
 
 db.prototype.listFields = function (tableName, _cb) {
-	return this.run("SHOW FULL COLUMNS FROM " + this.addTicks(tableName), function (err, rows) {
+	var sql = "SHOW FULL COLUMNS FROM " + this.addTicks(tableName);
+
+	return this.run(sql, null, function (err, rows) {
 		if (err) return _cb(err);
 		
 		var o = {};
@@ -145,14 +105,14 @@ db.prototype.listFields = function (tableName, _cb) {
 
 db.prototype.select = function (tableName, options, params, _cb) {
 	options.select = true;
-	var sql = this.build(tableName, options, params);
-	return this.run(sql, _cb);
+	var obj = this.build(tableName, options, params);
+	return this.run(obj.sql, obj.params, _cb);
 };
 
 db.prototype.update = function (tableName, options, params, _cb) {
 	options.update = true;
-	var sql = this.build(tableName, options, params);
-	return this.run(sql, _cb);
+	var obj = this.build(tableName, options, params);
+	return this.run(obj.sql, obj.params, _cb);
 };
 
 db.prototype.save = function (tableName, fields, obj, onDupeKey, _cb) {
@@ -177,8 +137,8 @@ db.prototype.save = function (tableName, fields, obj, onDupeKey, _cb) {
 	if (onDupeKey) sql += " " + onDupeKey;
 	else sql += fields.map(function (field) { return " `" + field + "` = VALUES(`" + field + "`)"; }).join(", ");
 	sql += ";";
-	var sqlReady = this.format(sql, params);
-	this.run(sqlReady, _cb);
+
+	this.run(sql, params, _cb);
 };
 
 db.prototype.delete = function (tableName, options, params, _cb) {
@@ -189,15 +149,15 @@ db.prototype.delete = function (tableName, options, params, _cb) {
 	if (options.offset) return _cb("Offset cannot be used for delete queries!");
 	
 	options.delete = true;
-	var sql = this.build(tableName, options, params);
-	return this.run(sql, _cb);
+	var obj = this.build(tableName, options, params);
+	return this.run(obj.sql, obj.params, _cb);
 };
 
 db.prototype.count = function (tableName, options, params, _cb) {
 	options.select = true;
 	options.fields = ["COUNT(*)"];
-	var sql = this.build(tableName, options, params);
-	return this.run(sql, function (err, rows) {
+	var obj = this.build(tableName, options, params);
+	return this.run(obj.sql, obj.params, function (err, rows) {
 		if (err) return _cb(err);
 		
 		_cb(null, rows[0]["COUNT(*)"]);
